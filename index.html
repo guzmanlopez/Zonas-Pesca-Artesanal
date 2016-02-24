@@ -1,0 +1,657 @@
+<!DOCTYPE html>
+<html>
+<head> 
+<title>Zonas de pesca artesanal v.05</title>	
+<meta charset="utf-8" />
+<link rel="stylesheet" href="css/leaflet.css" /> <!-- we will us e this as the styling script for our webmap-->
+<link rel="stylesheet" href="css/leaflet-search.css" /> <!-- leaflet search -->
+<link rel="stylesheet" href="css/style.css" /> <!-- leaflet search -->
+<link rel="stylesheet" href="http://maxcdn.bootstrapcdn.com/font-awesome/4.2.0/css/font-awesome.min.css" /> <!-- iconos GeoNames earch -->
+<link rel="stylesheet" href="css/L.Control.Geonames.css" /> <!-- GeoNames search -->
+<link rel="stylesheet" href="css/leaflet.draw.css" /> <!-- Draw -->
+<link rel="stylesheet" href="css/leaflet.measurecontrol.css" /> <!-- Measure -->
+<link rel="stylesheet" href="css/MarkerCluster.css" />
+<link rel="stylesheet" href="css/MarkerCluster.Default.css" />
+<link rel="stylesheet" type="text/css" href="css/own_style.css">
+<link rel="stylesheet" href="css/label.css" />
+<script src="js/jquery-1.11.1.min.js"></script> <!-- this is the javascript file that does the magic-->
+<script src="js/Autolinker.min.js"></script>
+<meta name="viewport" content="initial-scale=1.0, user-scalable=no" />
+	<style>
+.search-input {
+	font-family:Open Sans
+}
+.search-input,
+.leaflet-control-search {
+	max-width:400px;
+}
+</style>
+
+<script src="js/leaflet.js"></script> <!-- this is the javascript file that does the magic-->
+<script src="js/leaflet-search.js"></script> <!-- leaflet search -->
+<script src="js/L.Control.Geonames.js"></script> <!-- GeoNames search -->
+<!-- Draw -->
+<!-- <script src="js/leaflet-src.js"></script> -->
+<script src="src/Leaflet.draw.js"></script> 
+<script src="src/Toolbar.js"></script>
+<script src="src/Tooltip.js"></script>
+<script src="src/ext/GeometryUtil.js"></script>
+<script src="src/ext/LatLngUtil.js"></script>
+<script src="src/ext/LineUtil.Intersect.js"></script>
+<script src="src/ext/Polygon.Intersect.js"></script>
+<script src="src/ext/Polyline.Intersect.js"></script>
+<script src="src/draw/DrawToolbar.js"></script>
+<script src="src/draw/handler/Draw.Feature.js"></script>
+<script src="src/draw/handler/Draw.SimpleShape.js"></script>
+<script src="src/draw/handler/Draw.Polyline.js"></script>
+<script src="src/draw/handler/Draw.Circle.js"></script>
+<script src="src/draw/handler/Draw.Marker.js"></script>
+<script src="src/draw/handler/Draw.Polygon.js"></script>
+<script src="src/draw/handler/Draw.Rectangle.js"></script>
+<script src="src/edit/EditToolbar.js"></script>
+<script src="src/edit/handler/EditToolbar.Edit.js"></script>
+<script src="src/edit/handler/EditToolbar.Delete.js"></script>
+<script src="src/Control.Draw.js"></script>
+<script src="src/edit/handler/Edit.Poly.js"></script>
+<script src="src/edit/handler/Edit.SimpleShape.js"></script>
+<script src="src/edit/handler/Edit.Circle.js"></script>
+<script src="src/edit/handler/Edit.Rectangle.js"></script>
+<script src="src/edit/handler/Edit.Marker.js"></script>
+<script src="js/leaflet-hash.js"></script>
+<script src="js/label.js"></script>
+<script src="js/leaflet.markercluster.js"></script>
+<!--- Measure -->	
+<script src="js/leaflet.measurecontrol.js"></script>
+<!--- Cargar DATA de zonas y puertos -->	
+<script src='data/exp_L.js' ></script>
+<script src='data/exp_K.js' ></script>
+<script src='data/exp_J.js' ></script>
+<script src='data/exp_I.js' ></script>
+<script src='data/exp_H.js' ></script>
+<script src='data/exp_G.js' ></script>
+<script src='data/exp_F.js' ></script>
+<script src='data/exp_E.js' ></script>
+<script src='data/exp_D.js' ></script>
+<script src='data/exp_C.js' ></script>
+<script src='data/exp_B.js' ></script>
+<script src='data/exp_A.js' ></script>
+<script src='data/exp_puertos_desembarque.js' ></script>
+</head>
+<body>
+ 
+<div id="map"></div> <!-- this is the initial look of the map. in most cases it is done externally using something like a map.css stylesheet were you can specify the look of map elements, like background color tables and so on.-->
+
+<script>
+    var map = L.map('map', { zoomControl:true }).fitBounds([[-35.2,-58.6],[-30.0,-53.0]]);
+    var hash = new L.Hash(map); // add hashes to html address to easy share locations
+    var feature_group = new L.featureGroup([]);
+    var raster_group = new L.LayerGroup([]);
+    
+    // Mapas base [MAPBOX OUTDOOR, OSM y MAPBOX SAT]
+    var basemap_1 = L.tileLayer('http://{s}.tiles.mapbox.com/v3/guzman.lgoi91mh/{z}/{x}/{y}.png',{attribution: '<a href=https://www.mapbox.com/about/maps/> &copy; Mapbox &copy; OpenStreetMap</a>'});
+    var basemap_2 = L.tileLayer('http://{s}.tiles.mapbox.com/v3/guzman.lcicfiha/{z}/{x}/{y}.png',{attribution: '<a href=https://www.mapbox.com/about/maps/> &copy; Mapbox &copy; OpenStreetMap</a>'});
+    var basemap_3 = L.tileLayer('http://{s}.tiles.mapbox.com/v3/guzman.j035h3hc/{z}/{x}/{y}.png',{attribution: '<a href=https://www.mapbox.com/about/maps/> &copy; Mapbox &copy; OpenStreetMap</a>'});
+    var basemap_4 = L.tileLayer('http://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {attribution: '&copy; <a href="http://openstreetmap.org">OpenStreetMap</a> contributors,<a href="http://creativecommons.org/licenses/by-sa/2.0/">CC-BY-SA</a>'});
+    
+    basemap_1.addTo(map);
+    
+    var layerOrder=new Array();
+    
+    var markersLayer = new L.LayerGroup(); // layer contain searched elements
+    map.addLayer(markersLayer);
+    
+    // Cargar puertos
+    function pop_puertos_desembarque(feature, layer) {
+        var popupContent = '<table><tr><th scope="row">Puerto:</th><td>' + Autolinker.link(String(feature.properties['NOMBRE'])) + '</td></tr></table>';
+        layer.bindPopup(popupContent);
+    }
+    var exp_puertos_desembarqueJSON = new L.geoJson(exp_puertos_desembarque,{
+        onEachFeature: pop_puertos_desembarque,
+        pointToLayer: function (feature,latlng) {
+            return new L.Marker(latlng, {
+                icon: new L.Icon({
+                    iconUrl:'css/images/marker-icon-2.png',
+                    iconSize: [32,32],
+                    iconRetinaUrl: 'css/images/marker-icon-2x-2.png',
+                    iconAnchor:[16.5,32],
+                    shadowUrl:'css/images/marker-shadow.png',
+                    shadowAnchor:[13,31.5],
+                    shadowSize:[34,34]
+                })
+            } 
+                    );
+        }
+    });
+   
+    feature_group.addLayer(exp_puertos_desembarqueJSON);
+    
+    // Cluster puertos
+    var cluster_puertos_desembarqueJSON= new L.MarkerClusterGroup({
+        showCoverageOnHover: false,
+        zoomToBoundsOnClick:true,
+        spiderfyOnMaxZoom:true
+});
+    cluster_puertos_desembarqueJSON.addLayer(exp_puertos_desembarqueJSON);
+    
+    // add comment sign to hide this layer on the map in the initial view.
+    cluster_puertos_desembarqueJSON.addTo(map);
+    
+    // Búsqueda de puertos
+    var controlSearch = new L.Control.Search({
+        layer: markersLayer,
+        propertyName: 'title',
+        propertyLoc: 'loc',
+        circleLocation: true,
+        markerLocation: false,
+        initial: false,
+        position: 'topright',
+        zoom:12,
+        text: 'Buscar puerto',
+        textCancel: 'Cancelar',
+        textErr: '¡Puerto no encontrado!'
+        //markerIcon: new L.Icon({iconUrl:'css/images/marker-icon-2.png', iconSize: [35,35], iconRetinaUrl: 'css/images/marker-icon-2x-2.png'})
+    });
+        
+    // Búsqueda en OSM nominatum
+    var controlSearch2 = new L.Control.Search({
+        url: 'http://nominatim.openstreetmap.org/search?format=json&q={s}',
+        jsonpParam: 'json_callback',
+        propertyName: 'display_name',
+        propertyLoc: ['lat','lon'],
+        circleLocation: true,
+        markerLocation: false,
+        initial: false,
+        autoType: false,
+        autoCollapse: true,
+        minLength: 2,
+        zoom:12,
+        text: 'Ingresar nombre de lugar',
+        textCancel: 'Cancelar',
+        textErr: '¡Lugar no encontrado!'
+    });
+			
+    // populate map with markers from sample data
+    
+    for(i in exp_puertos_desembarque.features) {
+        var title = exp_puertos_desembarque.features[i].properties.NOMBRE, // valor buscado
+        loc = [exp_puertos_desembarque.features[i].geometry.coordinates[1],exp_puertos_desembarque.features[i].geometry.coordinates[0]], // posición encontrada
+        marker = new L.Marker(new L.latLng(loc), {
+            icon: new L.Icon({
+                iconUrl:'css/images/marker-icon-2.png', 
+                iconSize: [35,35], 
+                iconRetinaUrl: 'css/images/marker-icon-2x-2.png'
+            }),
+            clickable:false,
+            title: title,
+            zIndexOffset:-1000,
+            opacity:0
+        }
+                );
+        //marker.bindPopup('Puerto: ' + title);
+        markersLayer.addLayer(marker);
+    }
+		
+////// INICIO PRUEBAS
+
+
+		
+///// FIN PRUEBAS
+		
+		
+    // Búsqueda en GeoNames
+    var controlSearch3 = L.control.geonames({
+        username: 'cbi.test',  // Geonames account username.  Must be provided
+        zoomLevel: 14,  // Max zoom level to zoom to for location.  If null, will use the map's max zoom level.
+        maxresults: 20,  // Maximum number of results to display per search
+        className: 'fa fa-crosshairs',  // class for icon
+        workingClass: 'fa-spin',  // class for search underway
+        featureClasses: ['A', 'H', 'L', 'P', 'R', 'S', 'T', 'U', 'V'],  // feature classes to search against.  See: http://www.geonames.org/export/codes.html
+        baseQuery: 'isNameRequired=true',  // The core query sent to GeoNames, later combined with other parameters above
+        position: 'topright'
+    });
+   
+	
+    // Caja de herramientas para dibujar y medir
+    drawnItems = L.featureGroup().addTo(map);
+    var draw_measure = new L.Control.Draw({edit: { featureGroup: drawnItems }});
+    map.on('draw:created', function(event) {
+        var layer = event.layer;
+        drawnItems.addLayer(layer);
+    });
+        
+   // Datos de capas de zonas
+   
+   // ZONA A
+    function pop_A(feature, layer) {
+        var popupContent = '<table><tr><th scope="row">ZONA</th><td>' 
+                + Autolinker.link(String(feature.properties['ZONA']))
+                + '</td></tr><tr><th scope="row">NOMBRE</th><td>'
+                + Autolinker.link(String(feature.properties['NOMBRE']))
+                + '</td></tr><tr><th scope="row">EXTENSION</th><td>'
+                + Autolinker.link(String(feature.properties['EXTENSION']))
+                + '</td></tr></table>';layer.bindPopup(popupContent);}
+    
+        var exp_AJSON = new L.geoJson(exp_A, {onEachFeature: pop_A, style: function (feature) {
+                return {
+                    color: feature.properties.border_color_qgis2leaf,
+                    fillColor: feature.properties.color_qgis2leaf,
+                    weight: feature.properties.radius_qgis2leaf,
+                    opacity: feature.properties.transp_qgis2leaf,
+                    fillOpacity: feature.properties.transp_qgis2leaf
+                };
+            }
+        }
+                );
+        
+        feature_group.addLayer(exp_AJSON);
+        layerOrder[layerOrder.length] = exp_AJSON;
+        for (index = 0; index < layerOrder.length; index++) {
+            map.removeLayer(layerOrder[index]);
+            map.addLayer(layerOrder[index]);
+        }
+        
+    // add comment sign to hide this layer on the map in the initial view.
+    exp_AJSON.addTo(map);
+    
+    // ZONA B
+    function pop_B(feature, layer) {
+        var popupContent = '<table><tr><th scope="row">ZONA</th><td>' 
+                + Autolinker.link(String(feature.properties['ZONA']))
+                + '</td></tr><tr><th scope="row">NOMBRE</th><td>'
+                + Autolinker.link(String(feature.properties['NOMBRE']))
+                + '</td></tr><tr><th scope="row">EXTENSION</th><td>'
+                + Autolinker.link(String(feature.properties['EXTENSION']))
+                + '</td></tr></table>';layer.bindPopup(popupContent);}
+    
+        var exp_BJSON = new L.geoJson(exp_B,{onEachFeature: pop_B,style: function (feature) {
+                return {
+                    color: feature.properties.border_color_qgis2leaf,
+                    fillColor: feature.properties.color_qgis2leaf,
+                    weight: feature.properties.radius_qgis2leaf,
+                    opacity: feature.properties.transp_qgis2leaf,
+                    fillOpacity: feature.properties.transp_qgis2leaf};
+            }
+        }
+                );
+        
+        feature_group.addLayer(exp_BJSON);
+        layerOrder[layerOrder.length] = exp_BJSON;
+        for (index = 0; index < layerOrder.length; index++) {
+            map.removeLayer(layerOrder[index]);
+            map.addLayer(layerOrder[index]);
+        }    
+   
+    // add comment sign to hide this layer on the map in the initial view.
+    exp_AJSON.addTo(map);
+    
+    // ZONA C
+    function pop_C(feature, layer) {
+        var popupContent = '<table><tr><th scope="row">ZONA</th><td>' 
+                + Autolinker.link(String(feature.properties['ZONA']))
+                + '</td></tr><tr><th scope="row">NOMBRE</th><td>'
+                + Autolinker.link(String(feature.properties['NOMBRE']))
+                + '</td></tr><tr><th scope="row">EXTENSION</th><td>'
+                + Autolinker.link(String(feature.properties['EXTENSION']))
+                + '</td></tr></table>';layer.bindPopup(popupContent);}
+    
+        var exp_CJSON = new L.geoJson(exp_C,{onEachFeature: pop_C,style: function (feature) {
+                return {
+                    color: feature.properties.border_color_qgis2leaf,
+                    fillColor: feature.properties.color_qgis2leaf,
+                    weight: feature.properties.radius_qgis2leaf,
+                    opacity: feature.properties.transp_qgis2leaf,
+                    fillOpacity: feature.properties.transp_qgis2leaf};
+            }
+        }
+                );
+        
+        feature_group.addLayer(exp_CJSON);
+        layerOrder[layerOrder.length] = exp_CJSON;
+        for (index = 0; index < layerOrder.length; index++) {
+            map.removeLayer(layerOrder[index]);
+            map.addLayer(layerOrder[index]);
+        }    
+   
+    // add comment sign to hide this layer on the map in the initial view.
+    exp_CJSON.addTo(map);
+    
+    // ZONA D
+    function pop_D(feature, layer) {
+        var popupContent = '<table><tr><th scope="row">ZONA</th><td>' 
+                + Autolinker.link(String(feature.properties['ZONA']))
+                + '</td></tr><tr><th scope="row">NOMBRE</th><td>'
+                + Autolinker.link(String(feature.properties['NOMBRE']))
+                + '</td></tr><tr><th scope="row">EXTENSION</th><td>'
+                + Autolinker.link(String(feature.properties['EXTENSION']))
+                + '</td></tr></table>';layer.bindPopup(popupContent);}
+    
+        var exp_DJSON = new L.geoJson(exp_D,{onEachFeature: pop_D,style: function (feature) {
+                return {
+                    color: feature.properties.border_color_qgis2leaf,
+                    fillColor: feature.properties.color_qgis2leaf,
+                    weight: feature.properties.radius_qgis2leaf,
+                    opacity: feature.properties.transp_qgis2leaf,
+                    fillOpacity: feature.properties.transp_qgis2leaf};
+            }
+        }
+                );
+        
+        feature_group.addLayer(exp_DJSON);
+        layerOrder[layerOrder.length] = exp_DJSON;
+        for (index = 0; index < layerOrder.length; index++) {
+            map.removeLayer(layerOrder[index]);
+            map.addLayer(layerOrder[index]);
+        }    
+   
+    // add comment sign to hide this layer on the map in the initial view.
+    exp_DJSON.addTo(map);
+    
+    // ZONA E
+    function pop_E(feature, layer) {
+        var popupContent = '<table><tr><th scope="row">ZONA</th><td>' 
+                + Autolinker.link(String(feature.properties['ZONA']))
+                + '</td></tr><tr><th scope="row">NOMBRE</th><td>'
+                + Autolinker.link(String(feature.properties['NOMBRE']))
+                + '</td></tr><tr><th scope="row">EXTENSION</th><td>'
+                + Autolinker.link(String(feature.properties['EXTENSION']))
+                + '</td></tr></table>';layer.bindPopup(popupContent);}
+    
+        var exp_EJSON = new L.geoJson(exp_E,{onEachFeature: pop_E, style: function (feature) {
+                return {
+                    color: feature.properties.border_color_qgis2leaf,
+                    fillColor: feature.properties.color_qgis2leaf,
+                    weight: feature.properties.radius_qgis2leaf,
+                    opacity: feature.properties.transp_qgis2leaf,
+                    fillOpacity: feature.properties.transp_qgis2leaf};
+            }
+        }
+                );
+        
+        feature_group.addLayer(exp_EJSON);
+        layerOrder[layerOrder.length] = exp_EJSON;
+        for (index = 0; index < layerOrder.length; index++) {
+            map.removeLayer(layerOrder[index]);
+            map.addLayer(layerOrder[index]);
+        }    
+   
+    // add comment sign to hide this layer on the map in the initial view.
+    exp_EJSON.addTo(map);
+    
+    // ZONA F
+    function pop_F(feature, layer) {
+        var popupContent = '<table><tr><th scope="row">ZONA</th><td>' 
+                + Autolinker.link(String(feature.properties['ZONA']))
+                + '</td></tr><tr><th scope="row">NOMBRE</th><td>'
+                + Autolinker.link(String(feature.properties['NOMBRE']))
+                + '</td></tr><tr><th scope="row">EXTENSION</th><td>'
+                + Autolinker.link(String(feature.properties['EXTENSION']))
+                + '</td></tr></table>';layer.bindPopup(popupContent);}
+    
+        var exp_FJSON = new L.geoJson(exp_F,{onEachFeature: pop_F,style: function (feature) {
+                return {
+                    color: feature.properties.border_color_qgis2leaf,
+                    fillColor: feature.properties.color_qgis2leaf,
+                    weight: feature.properties.radius_qgis2leaf,
+                    opacity: feature.properties.transp_qgis2leaf,
+                    fillOpacity: feature.properties.transp_qgis2leaf};
+            }
+        }
+                );
+        
+        feature_group.addLayer(exp_FJSON);
+        layerOrder[layerOrder.length] = exp_FJSON;
+        for (index = 0; index < layerOrder.length; index++) {
+            map.removeLayer(layerOrder[index]);
+            map.addLayer(layerOrder[index]);
+        }    
+   
+    // add comment sign to hide this layer on the map in the initial view.
+    exp_FJSON.addTo(map);
+    
+    // ZONA G
+    function pop_G(feature, layer) {
+        var popupContent = '<table><tr><th scope="row">ZONA</th><td>' 
+                + Autolinker.link(String(feature.properties['ZONA']))
+                + '</td></tr><tr><th scope="row">NOMBRE</th><td>'
+                + Autolinker.link(String(feature.properties['NOMBRE']))
+                + '</td></tr><tr><th scope="row">EXTENSION</th><td>'
+                + Autolinker.link(String(feature.properties['EXTENSION']))
+                + '</td></tr></table>';layer.bindPopup(popupContent);}
+    
+        var exp_GJSON = new L.geoJson(exp_G,{onEachFeature: pop_G,style: function (feature) {
+                return {color: feature.properties.border_color_qgis2leaf,
+                    fillColor: feature.properties.color_qgis2leaf,
+                    weight: feature.properties.radius_qgis2leaf,
+                    opacity: feature.properties.transp_qgis2leaf,
+                    fillOpacity: feature.properties.transp_qgis2leaf};
+            }
+        }
+                );
+        
+        feature_group.addLayer(exp_GJSON);
+        layerOrder[layerOrder.length] = exp_GJSON;
+        for (index = 0; index < layerOrder.length; index++) {
+            map.removeLayer(layerOrder[index]);
+            map.addLayer(layerOrder[index]);
+        }    
+   
+    // add comment sign to hide this layer on the map in the initial view.
+    exp_GJSON.addTo(map);
+    
+    // ZONA H
+    function pop_H(feature, layer) {
+        var popupContent = '<table><tr><th scope="row">ZONA</th><td>' 
+                + Autolinker.link(String(feature.properties['ZONA']))
+                + '</td></tr><tr><th scope="row">NOMBRE</th><td>'
+                + Autolinker.link(String(feature.properties['NOMBRE']))
+                + '</td></tr><tr><th scope="row">EXTENSION</th><td>'
+                + Autolinker.link(String(feature.properties['EXTENSION']))
+                + '</td></tr></table>';layer.bindPopup(popupContent);}
+    
+        var exp_HJSON = new L.geoJson(exp_H,{onEachFeature: pop_H,style: function (feature) {
+                return {
+                    color: feature.properties.border_color_qgis2leaf,
+                    fillColor: feature.properties.color_qgis2leaf,
+                    weight: feature.properties.radius_qgis2leaf,
+                    opacity: feature.properties.transp_qgis2leaf,
+                    fillOpacity: feature.properties.transp_qgis2leaf};
+            }
+        }
+                );
+        
+        feature_group.addLayer(exp_HJSON);
+        layerOrder[layerOrder.length] = exp_HJSON;
+        for (index = 0; index < layerOrder.length; index++) {
+            map.removeLayer(layerOrder[index]);
+            map.addLayer(layerOrder[index]);
+        }    
+   
+    // add comment sign to hide this layer on the map in the initial view.
+    exp_HJSON.addTo(map);
+    
+    // ZONA I
+    function pop_I(feature, layer) {
+        var popupContent = '<table><tr><th scope="row">ZONA</th><td>' 
+                + Autolinker.link(String(feature.properties['ZONA']))
+                + '</td></tr><tr><th scope="row">NOMBRE</th><td>'
+                + Autolinker.link(String(feature.properties['NOMBRE']))
+                + '</td></tr><tr><th scope="row">EXTENSION</th><td>'
+                + Autolinker.link(String(feature.properties['EXTENSION']))
+                + '</td></tr></table>';layer.bindPopup(popupContent);}
+    
+        var exp_IJSON = new L.geoJson(exp_I,{onEachFeature: pop_I, style: function (feature) {
+                return {
+                    color: feature.properties.border_color_qgis2leaf,
+                    fillColor: feature.properties.color_qgis2leaf,
+                    weight: feature.properties.radius_qgis2leaf,
+                    opacity: feature.properties.transp_qgis2leaf,
+                    fillOpacity: feature.properties.transp_qgis2leaf
+                };
+            }
+        }
+                );
+        
+        feature_group.addLayer(exp_IJSON);
+        layerOrder[layerOrder.length] = exp_IJSON;
+        for (index = 0; index < layerOrder.length; index++) {
+            map.removeLayer(layerOrder[index]);
+            map.addLayer(layerOrder[index]);
+        }    
+   
+    // add comment sign to hide this layer on the map in the initial view.
+    exp_IJSON.addTo(map);
+    
+    // ZONA J
+    function pop_J(feature, layer) {
+        var popupContent = '<table><tr><th scope="row">ZONA</th><td>' 
+                + Autolinker.link(String(feature.properties['ZONA']))
+                + '</td></tr><tr><th scope="row">NOMBRE</th><td>'
+                + Autolinker.link(String(feature.properties['NOMBRE']))
+                + '</td></tr><tr><th scope="row">EXTENSION</th><td>'
+                + Autolinker.link(String(feature.properties['EXTENSION']))
+                + '</td></tr></table>';layer.bindPopup(popupContent);}
+    
+        var exp_JJSON = new L.geoJson(exp_J,{onEachFeature: pop_J,style: function (feature) {
+                return {color: feature.properties.border_color_qgis2leaf,
+                    fillColor: feature.properties.color_qgis2leaf,
+                    weight: feature.properties.radius_qgis2leaf,
+                    opacity: feature.properties.transp_qgis2leaf,
+                    fillOpacity: feature.properties.transp_qgis2leaf
+                };
+            }
+        }
+                );
+        
+        feature_group.addLayer(exp_JJSON);
+        layerOrder[layerOrder.length] = exp_JJSON;
+        for (index = 0; index < layerOrder.length; index++) {
+            map.removeLayer(layerOrder[index]);
+            map.addLayer(layerOrder[index]);
+        }    
+   
+    // add comment sign to hide this layer on the map in the initial view.
+    exp_JJSON.addTo(map);
+    
+    // ZONA K
+    function pop_K(feature, layer) {
+        var popupContent = '<table><tr><th scope="row">ZONA</th><td>' 
+                + Autolinker.link(String(feature.properties['ZONA']))
+                + '</td></tr><tr><th scope="row">NOMBRE</th><td>'
+                + Autolinker.link(String(feature.properties['NOMBRE']))
+                + '</td></tr><tr><th scope="row">EXTENSION</th><td>'
+                + Autolinker.link(String(feature.properties['EXTENSION']))
+                + '</td></tr></table>';layer.bindPopup(popupContent);}
+    
+        var exp_KJSON = new L.geoJson(exp_K,{onEachFeature: pop_K, style: function (feature) {
+                return {
+                    color: feature.properties.border_color_qgis2leaf,
+                    fillColor: feature.properties.color_qgis2leaf,
+                    weight: feature.properties.radius_qgis2leaf,
+                    opacity: feature.properties.transp_qgis2leaf,
+                    fillOpacity: feature.properties.transp_qgis2leaf
+                };
+            }
+        }
+                );
+        
+        feature_group.addLayer(exp_KJSON);
+        layerOrder[layerOrder.length] = exp_KJSON;
+        for (index = 0; index < layerOrder.length; index++) {
+            map.removeLayer(layerOrder[index]);
+            map.addLayer(layerOrder[index]);
+        }    
+   
+    // add comment sign to hide this layer on the map in the initial view.
+    exp_KJSON.addTo(map);
+    
+    // ZONA L
+    function pop_L(feature, layer) {
+        var popupContent = '<table><tr><th scope="row">ZONA</th><td>'
+                + Autolinker.link(String(feature.properties['ZONA'])) 
+                + '</td></tr><tr><th scope="row">NOMBRE</th><td>' 
+                + Autolinker.link(String(feature.properties['NOMBRE'])) 
+                + '</td></tr><tr><th scope="row">EXTENSION</th><td>' 
+                + Autolinker.link(String(feature.properties['EXTENSION'])) 
+                + '</td></tr></table>';	layer.bindPopup(popupContent);}
+    
+    var exp_LJSON = new L.geoJson(exp_L,{onEachFeature: pop_L,style: function (feature) {
+            return {
+                color: feature.properties.border_color_qgis2leaf,
+                fillColor: feature.properties.color_qgis2leaf,
+                weight: feature.properties.radius_qgis2leaf,
+                opacity: feature.properties.transp_qgis2leaf,
+                fillOpacity: feature.properties.transp_qgis2leaf};
+        }
+    }
+            );
+    
+    feature_group.addLayer(exp_LJSON);
+    layerOrder[layerOrder.length] = exp_LJSON;
+    for (index = 0; index < layerOrder.length; index++) {
+            map.removeLayer(layerOrder[index]);
+            map.addLayer(layerOrder[index]);
+        }
+				
+    // add comment sign to hide this layer on the map in the initial view.
+    exp_LJSON.addTo(map);
+
+    var title = new L.Control();
+    title.onAdd = function (map) {this._div = L.DomUtil.create('div', 'info'); // create a div with a class "info"
+    this.update();
+    return this._div;
+};
+
+// Título y subtítulo del mapa
+title.update = function () {
+    this._div.innerHTML = '<h2>Pesca Artesanal</h2>Zonas de pesca<img src="img/barca-pesca-artesanal.png" height="19" width="57" align="right">';
+};
+title.addTo(map);
+
+// Agregar control de búsqueda de puertos
+map.addControl(controlSearch);
+
+// Agregar control de búsqueda en OSM nominatum
+//map.addControl(controlSearch2);
+
+// Agregar control de búsqueda en GeoNames
+map.addControl(controlSearch3);
+
+// Agregar herramientas medidas y dibujos
+map.addControl(draw_measure);
+
+// Herramienta de medir distancias
+L.Control.measureControl().addTo(map);
+
+// Leyendas para control de capas
+var baseMaps = {
+    'Mapbox - Satélite Híbrido': basemap_1,
+    'Mapbox - Satélite': basemap_2,
+    'Mapbox - Outdoor': basemap_3,
+    'OpenStreetMap': basemap_4
+};
+
+var overlayMaps = {
+    "Puertos desembarque": cluster_puertos_desembarqueJSON,
+    "Zona L": exp_LJSON,
+    "Zona K": exp_KJSON,
+    "Zona J": exp_JJSON,
+    "Zona I": exp_IJSON,
+    "Zona H": exp_HJSON,
+    "Zona G": exp_GJSON,
+    "Zona F": exp_FJSON,
+    "Zona E": exp_EJSON,
+    "Zona D": exp_DJSON,
+    "Zona C": exp_CJSON,
+    "Zona B": exp_BJSON,
+    "Zona A": exp_AJSON
+};
+	
+// Agregar control de capas	
+L.control.layers(baseMaps, overlayMaps, {collapsed:true}).addTo(map);
+
+// Agregar escala
+L.control.scale({options: {position: 'bottomleft', maxWidth: 100, metric: true, imperial: false, updateWhenIdle: false}}).addTo(map);
+
+</script> 
+</body>
+</html>
