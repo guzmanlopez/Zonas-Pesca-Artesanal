@@ -4,6 +4,7 @@ Este programa es un mapa web interactivo que utiliza la librería JavaScript de 
 
 ![Image](http://leafletjs.com/docs/images/logo.png)
 
+### [Ir al mapa](https://cdn.rawgit.com/guzmanlopez/Zonas-Pesca-Artesanal/master/index.html "demo")
 
 #### **Resumen**
 
